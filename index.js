@@ -37,6 +37,13 @@ async function run() {
       res.send(result);
     });
 
+    //get all job info
+    app.get("/api/v1/all/jobs", async (req, res) => {
+      const cursor = JobsInfoCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     //Add job Info
     app.post("/api/v1/add/jobs", async (req, res) => {
       const jobInfo = req.body;
