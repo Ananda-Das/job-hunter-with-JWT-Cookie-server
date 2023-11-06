@@ -8,8 +8,7 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion } = require("mongodb");
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qfsxze0.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -19,7 +18,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -39,21 +38,22 @@ async function run() {
     });
 
     //Add job Info
-    app.post('/api/v1/add/jobs', async(req, res)=>{
+    app.post("/api/v1/add/jobs", async (req, res) => {
       const jobInfo = req.body;
       // console.log(jobsInfo);
       const result = await JobsInfoCollection.insertOne(jobInfo);
       res.send(result);
-    })
+    });
 
-    //Add Brand Info
-    // app.post("/brands", async (req, res) => {
-    //   const brandInfo = req.body;
-    //   console.log(brandInfo);
-    //   const result = await brandNameCollection.insertOne(brandInfo);
-    //   res.send(result);
-    // });
-
+    //get specifice a user posted job
+    app.get("/api/v1/my/jobs", async (req, res) => {
+      let query = {};
+      if (req.query?.userEmail) {
+        query = { userEmail: req.query.userEmail };
+      }
+      const result = await JobsInfoCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
@@ -64,7 +64,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
 
 app.get("/", (req, res) => {
   res.send("Job Hunter is Running!");
