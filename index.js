@@ -70,6 +70,19 @@ async function run() {
       res.send(result);
     });
 
+    //get specifice a user applied job
+    app.get("/api/v1/my/applied/jobs", async (req, res) => {
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email };
+      }
+      const result = await ApplyJobCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    
+
+
     //Apply for job
     app.post("/api/v1/apply/jobs/:id", async (req, res) => {
       const id = req.params.id;
