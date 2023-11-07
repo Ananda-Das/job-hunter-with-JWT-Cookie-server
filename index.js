@@ -29,6 +29,7 @@ async function run() {
     //Jobs Collections Name
     const JobCategoryCollection = client.db("JobHunterDB").collection("JobCategory");
     const JobsInfoCollection = client.db("JobHunterDB").collection("JobsInfo");
+    const ApplyJobCollection = client.db("JobHunterDB").collection("ApplyJobs");
 
     //Get Job Category Info
     app.get("/api/v1/jobsCategory", async (req, res) => {
@@ -47,7 +48,6 @@ async function run() {
     //Add job Info
     app.post("/api/v1/add/jobs", async (req, res) => {
       const jobInfo = req.body;
-      // console.log(jobsInfo);
       const result = await JobsInfoCollection.insertOne(jobInfo);
       res.send(result);
     });
@@ -68,6 +68,22 @@ async function run() {
       }
       const result = await JobsInfoCollection.find(query).toArray();
       res.send(result);
+    });
+
+    //Apply for job
+    app.post("/api/v1/apply/jobs/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const ApplyJobInfo = req.body;
+      const applicantNo = {
+        $inc: { jobApplicant: 1 }
+      }
+      const jobApplicationInfo = await JobsInfoCollection.updateOne(filter, applicantNo);
+      const result = await ApplyJobCollection.insertOne(ApplyJobInfo);
+      console.log(jobApplicationInfo);
+      console.log(result);
+      res.send({result, jobApplicationInfo});
     });
 
     // Send a ping to confirm a successful connection
