@@ -70,6 +70,30 @@ async function run() {
       res.send(result);
     });
 
+    //update a job
+    app.put("/api/v1/job/update/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedjob = req.body;
+      console.log(updatedjob);
+      const job = {
+        $set: {
+          comName: updatedjob.comName,
+          comimg: updatedjob.comimg,
+          bannerUrl: updatedjob.bannerUrl,
+          title: updatedjob.title,
+          category: updatedjob.category,
+          salary: updatedjob.salary,
+          deadline: updatedjob.deadline,
+          description: updatedjob.description,
+        },
+      };
+
+      const result = await JobsInfoCollection.updateOne(filter, job, options);
+      res.send(result);
+    });
+
     //get specifice a user applied job
     app.get("/api/v1/my/applied/jobs", async (req, res) => {
       let query = {};
