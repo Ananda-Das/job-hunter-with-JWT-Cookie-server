@@ -94,6 +94,14 @@ async function run() {
       res.send(result);
     });
 
+    //for delete a job
+    app.delete('/api/v1/jobs/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await JobsInfoCollection.deleteOne(query);
+      res.send(result);
+  })
+
     //get specifice a user applied job
     app.get("/api/v1/my/applied/jobs", async (req, res) => {
       let query = {};
@@ -103,8 +111,6 @@ async function run() {
       const result = await ApplyJobCollection.find(query).toArray();
       res.send(result);
     });
-
-    
 
 
     //Apply for job
