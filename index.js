@@ -1,12 +1,38 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
+
+//verify Token
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: "forbidden" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+    //error
+    if (err) {
+      return res.status(401).send({ message: "unauthorized" });
+    }
+    //
+    console.log("object", decoded);
+    req.user = decoded;
+    next();
+  });
+};
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -30,6 +56,26 @@ async function run() {
     const JobCategoryCollection = client.db("JobHunterDB").collection("JobCategory");
     const JobsInfoCollection = client.db("JobHunterDB").collection("JobsInfo");
     const ApplyJobCollection = client.db("JobHunterDB").collection("ApplyJobs");
+
+    //auth related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: "1h" });
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+          // maxAge: 0,
+        })
+        .send({ success: true });
+    });
+
+    app.post('/logout', async(req, res)=>{
+      const user = req.body;
+      res.clearCookie('token',{maxAge: 0}).send({success: true})
+    })
 
     //Get Job Category Info
     app.get("/api/v1/jobsCategory", async (req, res) => {
@@ -95,15 +141,19 @@ async function run() {
     });
 
     //for delete a job
-    app.delete('/api/v1/jobs/:id', async (req, res) => {
+    app.delete("/api/v1/jobs/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
+      const query = { _id: new ObjectId(id) };
       const result = await JobsInfoCollection.deleteOne(query);
       res.send(result);
-  })
+    });
 
     //get specifice a user applied job
-    app.get("/api/v1/my/applied/jobs", async (req, res) => {
+    app.get("/api/v1/my/applied/jobs", verifyToken, async (req, res) => {
+      // console.log("to sdff", req.cookies.token);
+      if (req.query.email !== req.user.email) {
+        return res.status(403).send({ message: "Forbiden Access" });
+      }
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
@@ -112,7 +162,6 @@ async function run() {
       res.send(result);
     });
 
-
     //Apply for job
     app.post("/api/v1/apply/jobs/:id", async (req, res) => {
       const id = req.params.id;
@@ -120,13 +169,13 @@ async function run() {
       const filter = { _id: new ObjectId(id) };
       const ApplyJobInfo = req.body;
       const applicantNo = {
-        $inc: { jobApplicant: 1 }
-      }
+        $inc: { jobApplicant: 1 },
+      };
       const jobApplicationInfo = await JobsInfoCollection.updateOne(filter, applicantNo);
       const result = await ApplyJobCollection.insertOne(ApplyJobInfo);
       console.log(jobApplicationInfo);
       console.log(result);
-      res.send({result, jobApplicationInfo});
+      res.send({ result, jobApplicationInfo });
     });
 
     // Send a ping to confirm a successful connection
